@@ -86,47 +86,130 @@ __webpack_require__(2);
 "use strict";
 
 
-//以前es5的正则创建方式
+// Promise对象
 {
-	var regex = new RegExp('xyz', 'i');
-	var regex2 = new RegExp(/xyz/i);
+	// 没有Promise对象之前的一些操作
+	var ajax = function ajax(callback) {
+		console.log('执行');
+		setTimeout(function () {
+			callback && callback();
+		}, 1000);
+	};
 
-	console.log(regex.test('xyz123'), regex2.test('xyz123'));
+	ajax(function () {
+		console.log('timeout1');
+	});
 }
-//es6新增的正则创建方式
+
 {
-	var _regex = new RegExp(/xyz/ig, 'i');
-	console.log(_regex.flags);
+	var _ajax = function _ajax() {
+		console.log('执行2');
+		return new Promise(function (resolve, reject) {
+			setTimeout(function () {
+				resolve();
+			}, 1000);
+		});
+	};
+
+	_ajax().then(function () {
+		console.log('promise', 'timeout2');
+	});
 }
-//es6新增修饰符
-//g和y都是全局修饰符
-{
-	var s = 'bbb_bb_b';
-	var a1 = /b+/g;
-	var a2 = new RegExp('b+', 'y');
 
-	console.log('one', a1.exec(s), a2.exec(s));
-	console.log('one', a1.exec(s), a2.exec(s));
-	//判断正则对象是否开启y修饰符
-	console.log(a1.sticky, a2.sticky);
+{
+	var _ajax2 = function _ajax2() {
+		console.log('执行2');
+		return new Promise(function (resolve, reject) {
+			setTimeout(function () {
+				resolve();
+			}, 1000);
+		});
+	};
+
+	_ajax2().then(function () {
+		return new Promise(function (resolve, reject) {
+			setTimeout(function () {
+				resolve();
+			}, 2000);
+		});
+	}).then(function () {
+		console.log('timeout3');
+	});
 }
-//u修饰符
+
 {
-	console.log('u-1', /^\uD83D/.test('\uD83D\uDC2A'));
-	console.log('u-2', /^(?:\uD83D(?![\uDC00-\uDFFF]))/.test('\uD83D\uDC2A'));
+	var _ajax3 = function _ajax3(num) {
+		return new Promise(function (resolve, reject) {
+			if (num > 5) {
+				resolve();
+			} else {
+				throw Error('出错了');
+			}
+		});
+	};
 
-	console.log('未加u修饰符进行匹配', /\u{61}/.test('a'));
-	console.log('添加u修饰符进行匹配', /a/.test('a'));
+	_ajax3(6).then(function () {
+		console.log('log', 6);
+	}).catch(function (err) {
+		console.log('catch', err);
+	});
 
-	console.log('\uD842\uDFB7');
+	_ajax3(3).then(function () {
+		console.log('log', 3);
+	}).catch(function (err) {
+		console.log('catch', err);
+	});
+}
 
-	var _s = '𠮷';
+// Promise对象的高级使用
+// all使用
+{
+	// 所有图片加载完成再加载到页面
+	var loadImg = function loadImg(src) {
+		return new Promise(function (resolve, reject) {
+			var img = document.createElement('img');
+			img.src = src;
+			img.onload = function () {
+				resolve(img);
+			};
+			img.onerror = function (err) {
+				reject(err);
+			};
+		});
+	};
 
-	console.log('u', /^.$/.test(_s));
-	console.log('u', /^(?:[\0-\t\x0B\f\x0E-\u2027\u202A-\uD7FF\uE000-\uFFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF])$/.test(_s));
+	var showImgs = function showImgs(imgs) {
+		imgs.forEach(function (img) {
+			document.body.appendChild(img);
+		});
+	};
 
-	console.log('test', /𠮷{2}/.test('𠮷𠮷'));
-	console.log('test2', /(?:\uD842\uDFB7){2}/.test('𠮷𠮷'));
+	Promise.all([loadImg('https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1527449236483&di=000e5a357739e588811184154e109d4f&imgtype=0&src=http%3A%2F%2Fimg5.duitang.com%2Fuploads%2Fitem%2F201603%2F21%2F20160321233248_wmHKU.thumb.700_0.jpeg'), loadImg('https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1527449298290&di=fb362f7b92ed1dd55c3e96edd9b1ed3a&imgtype=0&src=http%3A%2F%2Fimages.zb580.tv%2Fupload%2F201707%2F28%2F201707281413204427.jpg'), loadImg('https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1527449358489&di=1083cb0d4f00ee296403cee28aa37ce9&imgtype=0&src=http%3A%2F%2Fimgtu.5011.net%2Fuploads%2Fcontent%2F20170105%2F4332921483585630.jpg')]).then(showImgs);
+}
+
+// race使用
+{
+	// 当有一个图片加载完成就加载到页面
+	var _loadImg = function _loadImg(src) {
+		return new Promise(function (resolve, reject) {
+			var img = document.createElement('img');
+			img.src = src;
+			img.onload = function () {
+				resolve(img);
+			};
+			img.onerror = function (err) {
+				reject(err);
+			};
+		});
+	};
+
+	var _showImgs = function _showImgs(img) {
+		var p = document.createElement('p');
+		p.appendChild(img);
+		document.body.appendChild(p);
+	};
+
+	Promise.race([_loadImg('https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1527449236483&di=000e5a357739e588811184154e109d4f&imgtype=0&src=http%3A%2F%2Fimg5.duitang.com%2Fuploads%2Fitem%2F201603%2F21%2F20160321233248_wmHKU.thumb.700_0.jpeg'), _loadImg('https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1527449298290&di=fb362f7b92ed1dd55c3e96edd9b1ed3a&imgtype=0&src=http%3A%2F%2Fimages.zb580.tv%2Fupload%2F201707%2F28%2F201707281413204427.jpg'), _loadImg('https://timgsa.baidu.com/timg?image&quality=80&size=b9999_10000&sec=1527449358489&di=1083cb0d4f00ee296403cee28aa37ce9&imgtype=0&src=http%3A%2F%2Fimgtu.5011.net%2Fuploads%2Fcontent%2F20170105%2F4332921483585630.jpg')]).then(_showImgs);
 }
 
 /***/ })
